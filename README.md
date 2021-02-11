@@ -1,4 +1,4 @@
-# A simple Kubernetes Operator to return the most suitable Kubernetes Node / Virtual Machine for running a long running ML job (prototype) #
+# A simple Kubernetes Operator to return the most suitable Kubernetes Node / Virtual Machine for a long running ML job (prototype) #
 
 This repository contains a Kubernetes Operator that uses VMware's __govmomi__ to identify the best Kubernetes node (Virtual Machine) for running a long running machine learning job. This is simply a prototype, and includes some simulation to address non-existing fucntionality at present.
 A manifest is created with a number of specification field, and the most suitable Kubernetes node is returned in a number of the status fields of a __Custom Resource (CR)__. This tutorial will require us to extend Kubernetes with a new __Custom Resource Definition (CRD)__. The code shown here is for education purposes only, showing one way in which a Kubernetes controller / operator can access the underlying vSphere infrastructure for the purposes of querying resources.
