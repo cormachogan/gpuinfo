@@ -173,8 +173,192 @@ This file is modified to include a the __spec.DesAccTime__ and __spec.GPURequire
 
 Note that what we are doing here is for education purposes only. Typically what you would observe is that the spec and status fields would be similar, and it is the function of the controller to reconcile and differences between the two to achieve eventual consistency. But we are keeping things simple, as the purpose here is to show how vSphere can be queried from a Kubernetes Operator. Below is a snippet of the __gpuinfo_types.go__ showing the code changes. It does not include the __imports__ which also need to be added.  The code-complete [gpuinfo_types.go](api/v1/gpuinfo_types.go) is here.
 
+First let's look at getting the list of Kubernetes nodes:
+
 ```go
-xxx
+//
+//  Part 1 - Retrieve the list of Kubernetes Nodes. We need this to find out the related VM / ESXi host capabilities
+//
+	err := r.Client.List(context.TODO(), myNodeList)
+	if err != nil {
+		fmt.Println(fmt.Errorf("unable to retrieve nodes from node lister: %v", err))
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if len(myNodeList.Items) == 0 {
+		log.Error(err, "unable to find any nodes")
+		return ctrl.Result{}, err
+	} else {
+		msg := fmt.Sprintf("DEBUG: found %v nodes in cluster", len(myNodeList.Items))
+		log.Info(msg)
+	}
+
+	for i := range myNodeList.Items {
+		nodes = append(nodes, &myNodeList.Items[i])
+	}
+```
+
+Now let's look at the code that matches this K8s node to a VM:
+
+```go
+//
+// Retrieve summary property for VM which matches K8s node name
+//
+
+for i := 0; i < len(myNodeList.Items); i++ {
+
+	for _, vm := range vms {
+
+		if vm.Summary.Config.Name == myNodeList.Items[i].ObjectMeta.Name {
+
+			//
+			// Find ESXi Hypervisor/Host where VM/Node runs, and display relevant info  (currently just the name of the host)
+			//
+
+			for _, hs := range hss {
+				if reflect.DeepEqual(hs.Summary.Host, vm.Summary.Runtime.Host) {
+					candidate = append(candidate, CandidateList{
+						hs.Summary.Config.Name,
+						//
+						// Simulation Code for generating next maintenance slot, in hours
+						//
+						rand.Intn(mmMax-mmMin+1) + mmMin,
+
+						//
+						// Simulation Code for randomly selecting if host has GPU or not - basically get True or False
+						//
+						(bool)(rand.Float32() < 0.5),
+
+						//
+						// Get some CPU and Memory usage stats from the node - we will use this to decide the best node in the case of multiple node candidate being available
+						//
+						vm.Summary.QuickStats.GuestMemoryUsage,		
+                                                vm.Summary.QuickStats.OverallCpuDemand,
+
+						//
+						// VM Name / K8s Node Name
+						//
+						vm.Summary.Config.Name})
+				}
+			}
+	        }
+
+	}
+}
+
+//
+// More simulator code:
+//
+// First step is to just return suitable candidates for the long running job
+// This simply means that it matches both the Desired Accelerator Time and GPU
+// Requirement from the spec.
+//
+// Once the list of candidates is found, search through them for the winning candidate
+// We decided to use the node/virtual machine that had the least amount of CPU used
+//
+
+for _, entry := range candidate {
+
+	if (int64(entry.availAccTime) >= gpu.Spec.DesAccTime) && (entry.hasGPU == gpu.Spec.GPURequired) {
+
+		suitableCandidates++
+		bestCandidates = append(bestCandidates, entry)
+	}
+}
+
+//
+// At this point, bestCandidates has all available candidates that match the spec.
+// We now go through the bestCandidate and pick the winningCandidate, based on CPU usage
+//
+
+//
+// If there are no suitable candidates, send back a status that reports this
+//
+
+if suitableCandidates == 0 {
+	msg := fmt.Sprintf("Found  *** NO *** suitable candidates for the long running job\n")
+	log.Info(msg)
+
+	gpu.Status.SuitableNodeName = "None available"
+	gpu.Status.SuitableHostName = "None available"
+	gpu.Status.NodeMemoryUsage = 0
+	gpu.Status.NodeCPUUsage = 0
+	gpu.Status.AvailableAcceleratorTime = 0
+        //
+	// OK - so there is at least one suitable candidate
+	//
+} else if suitableCandidates == 1 {
+	msg := fmt.Sprintf("Found a total of *** 1 *** suitable candidates for the long running job\n")
+	log.Info(msg)
+
+	for _, singleentry := range bestCandidates {
+
+		gpu.Status.SuitableHostName = singleentry.hostName
+		gpu.Status.SuitableNodeName = singleentry.nodeName
+		gpu.Status.NodeCPUUsage = int64(singleentry.nodeCpuUsage)
+		gpu.Status.NodeMemoryUsage = int64(singleentry.nodeMemoryUsage)
+		gpu.Status.AvailableAcceleratorTime = int64(singleentry.availAccTime)
+	}
+        //
+	// So there are multiple candidates (VMs/Nodes) -  this logic simply selects the node which has the least amount of CPU usage
+	//
+
+} else if suitableCandidates > 1 {
+
+	msg := fmt.Sprintf("Found a total of *** %v *** suitable candidates for the long running job\n", suitableCandidates)
+	log.Info(msg)
+
+	//
+	// Initialize the array of the winning candidate
+	//
+
+	winnerCandidate.hostName = "Unknown"
+	winnerCandidate.nodeName = "Unknown"
+	winnerCandidate.nodeMemoryUsage = 0
+	winnerCandidate.nodeCpuUsage = 999999
+	winnerCandidate.availAccTime = 0
+			
+        //
+	// Search the list of suitable candidates, and update the winning candidate if the
+	// CPU usage is less that the current winning candidate
+	//
+	for _, newentry := range bestCandidates {
+
+		if newentry.nodeCpuUsage < winnerCandidate.nodeCpuUsage {
+			winnerCandidate.hostName = newentry.hostName
+			winnerCandidate.nodeName = newentry.nodeName
+			winnerCandidate.nodeMemoryUsage = newentry.nodeMemoryUsage
+			winnerCandidate.nodeCpuUsage = newentry.nodeCpuUsage
+			winnerCandidate.availAccTime = newentry.availAccTime
+		} else {
+
+			msg = fmt.Sprintf("DEBUG: multiple candidates : Node %s is not the winning candidate\n", newentry.nodeName)
+			log.Info(msg)
+		}
+	}
+	//
+	// Winning candidate from all of the suitable candidates is identified, update the status
+	//
+
+	gpu.Status.SuitableNodeName = winnerCandidate.nodeName
+	gpu.Status.SuitableHostName = winnerCandidate.hostName
+	gpu.Status.NodeMemoryUsage = int64(winnerCandidate.nodeMemoryUsage)
+	gpu.Status.NodeCPUUsage = int64(winnerCandidate.nodeCpuUsage)
+	gpu.Status.AvailableAcceleratorTime = int64(winnerCandidate.availAccTime)
+
+} else {
+	log.Error(err, "Problem with the number of candidates found")
+	return ctrl.Result{}, err
+}
+
+//
+// Update the GPU Info status fields
+//
+
+if err := r.Status().Update(ctx, gpu); err != nil {
+	log.Error(err, "unable to update GPUInfo status")
+	return ctrl.Result{}, err
+	}
 ```
 
 We are now ready to create the CRD. There is one final step however, and this involves updating the __Makefile__ which kubebuilder has created for us. In the default Makefile created by kubebuilder, the following __CRD_OPTIONS__ line appears:
@@ -434,7 +618,7 @@ func vlogin(ctx context.Context, vc, user, pwd string) (*vim25.Client, *govmomi.
 }
 ```
 
-Within the main function, there is a call to the __vlogin__ function with the parameters received from the environment variables shown below. 
+Within the main function, there is a call to the __vlogin__ function with the parameters received from the environment variables shown below.
 
 ```go
 //
@@ -693,7 +877,7 @@ Because this operator is going to try to access Kubernetes objects such as nodes
 
 :00:26.795317       1 reflector.go:153] pkg/mod/k8s.io/client-go@v0.17.2/tools/cache/reflector.go:105: Failed to list *v1.Node: nodes is forbidden: User "system:serviceaccount:accelerator-operator-system:default" cannot list resource "nodes" in API group "" at the cluster scope
 
-To address this, you can grant the service account additional privileges. There is an YAML manifest thaty opens up the privileges (here)[./securityPolicy-svc-accs.yaml] for reference. This can be used as a reference, but you may want to adjust the rules to suit your environment.
+To address this, you can grant the service account additional privileges. There is an YAML manifest thaty opens up the privileges [here](./securityPolicy-svc-accs.yaml) for reference. This can be used as a reference, but you may want to adjust the rules to suit your environment.
 
 ## Step 9 - Deploy the controller ##
 
