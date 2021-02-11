@@ -1,0 +1,7 @@
+domain: corinternal.com
+repo: gpuinfo
+resources:
+- group: topology
+  kind: GPUInfo
+  version: v1
+version: "2"

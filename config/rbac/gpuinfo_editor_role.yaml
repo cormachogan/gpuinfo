@@ -1,0 +1,24 @@
+# permissions for end users to edit gpuinfoes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gpuinfo-editor-role
+rules:
+- apiGroups:
+  - topology.corinternal.com
+  resources:
+  - gpuinfoes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - topology.corinternal.com
+  resources:
+  - gpuinfoes/status
+  verbs:
+  - get

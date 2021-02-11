@@ -1,0 +1,81 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: gpuinfoes.topology.corinternal.com
+spec:
+  group: topology.corinternal.com
+  names:
+    kind: GPUInfo
+    listKind: GPUInfoList
+    plural: gpuinfoes
+    shortNames:
+    - gpu
+    singular: gpuinfo
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.desAccTime
+      name: Desired Access Time (Hrs)
+      type: integer
+    - jsonPath: .spec.gpuRequired
+      name: GPU Required
+      type: boolean
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: GPUInfo is the Schema for the gpuinfoes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GPUInfoSpec defines the desired state of GPUInfo
+            properties:
+              desAccTime:
+                format: int64
+                type: integer
+              gpuRequired:
+                type: boolean
+            type: object
+          status:
+            description: GPUInfoStatus defines the observed state of GPUInfo
+            properties:
+              availableAcceleratorTime:
+                format: int64
+                type: integer
+              nodeCPUUsage:
+                format: int64
+                type: integer
+              nodeMemoryUsage:
+                format: int64
+                type: integer
+              suitableHostName:
+                type: string
+              suitableNodeName:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

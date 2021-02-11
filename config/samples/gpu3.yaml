@@ -1,0 +1,9 @@
+apiVersion: topology.corinternal.com/v1
+kind: GPUInfo
+metadata:
+  name: gpu3
+spec:
+  # Desired Accelerator Time (desAccTime) should be specified in hours
+  # GPU Required should be True or False
+  desAccTime: 75
+  gpuRequired: True
