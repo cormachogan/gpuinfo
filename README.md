@@ -879,7 +879,7 @@ Because this operator is going to try to access Kubernetes objects such as nodes
 
 To address this, you can grant the service account additional privileges. There is an YAML manifest thaty opens up the privileges [here](./securityPolicy-svc-accs.yaml) for reference. This can be used as a reference, but you may want to adjust the rules to suit your environment.
 
-## Step 9 - Deploy the controller ##
+## Step 10 - Deploy the controller ##
 
 To deploy the controller, we run another __make__ command. This will take care of all of the RBAC, cluster roles and role bindings necessary to run the controller, as well as pinging up the correct image, etc.
 
@@ -911,11 +911,11 @@ deployment.apps/accelerator-operator-controller-manager created
 $
 ```
 
-## Step 10 - Check controller functionality ##
+## Step 11 - Check controller functionality ##
 
 Now that our controller has been deployed, let's see if it is working. There are a few different commands that we can run to verify the operator is working.
 
-### Step 10.1 - Check the deployment and replicaset ###
+### Step 11.1 - Check the deployment and replicaset ###
 
 The deployment should be READY. Remember to specify the namespace correctly when checking it.
 
@@ -929,7 +929,7 @@ NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
 accelerator-operator-controller-manager   1/1     1            1           55m
 ```
 
-### Step 10.2 - Check the Pods ###
+### Step 11.2 - Check the Pods ###
 
 The deployment manages a single controller Pod. There should be 2 containers READY in the controller Pod. One is the __controller / manager__ and the other is the __kube-rbac-proxy__. The [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy/blob/master/README.md) is a small HTTP proxy that can perform RBAC authorization against the Kubernetes API. It restricts requests to authorized Pods only.
 
@@ -945,7 +945,7 @@ If you experience issues with the one of the pods not coming online, use the fol
 kubectl describe pod accelerator-operator-controller-manager-85b5f7c788-zx49v -n accelerator-operator-system
 ```
 
-### Step 10.3 - Check the controller / manager logs ###
+### Step 11.3 - Check the controller / manager logs ###
 
 If we query the __logs__ on the manager container, we should be able to observe successful startup messages as well as successful reconcile requests from the GPUInfo CR that we already deployed back in step 5. These reconcile requests should update the __Status__ fields with node information as per our controller logic. The command to query the manager container logs in the controller Pod is as follows:
 
@@ -974,7 +974,7 @@ I0211 14:57:46.087582       1 leaderelection.go:252] successfully acquired lease
 2021-02-11T14:57:46.867Z        DEBUG   controller-runtime.controller   Successfully Reconciled {"controller": "gpuinfo", "request": "default/gpuinfo-sample"}
 ```
 
-### Step 10.4 - Check a if suitable candidate is returned in the status ###
+### Step 11.4 - Check a if suitable candidate is returned in the status ###
 
 Last but not least, let's see if we can see the candidate information in the __status__ fields of the GPUInfo object created earlier.
 
