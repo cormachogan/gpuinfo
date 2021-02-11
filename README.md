@@ -539,8 +539,6 @@ type GPUInfoReconciler struct {
 
 Now lets look at the business logic / Reconcile code. Event though I have both govmomi and vim25 clients to get different information, I am using the vim25 client to  information in this tutorial. Again, this is just a learning exercise, to show various ways to retrieve vSphere information from an operator. The flow here is that we first get a list of Kubernetes nodes, then the list of VMs, and then we find which ones match. With the list of matching nodes, we see if they meet the criteria placed in the specification.  Once the list of nodes is narrowed down to the most suitable node, we populate the status fields with the requested information. I have added some additional logging messages to this controller logic, and we can check the manager logs to see these messages later on.
 
-```go
-
 First let's look at getting the list of Kubernetes nodes:
 
 ```go
