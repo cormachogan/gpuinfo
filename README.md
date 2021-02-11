@@ -875,7 +875,9 @@ We are now ready to deploy the controller to the Kubernetes cluster.
 
 Because this operator is going to try to access Kubernetes objects such as nodes, you need to ensure that the service account has the approriate privileges. Here is an example of what you might see in the logs when the operator is deployed, if you don't set the privileges correctly:
 
+```shell
 :00:26.795317       1 reflector.go:153] pkg/mod/k8s.io/client-go@v0.17.2/tools/cache/reflector.go:105: Failed to list *v1.Node: nodes is forbidden: User "system:serviceaccount:accelerator-operator-system:default" cannot list resource "nodes" in API group "" at the cluster scope
+```
 
 To address this, you can grant the service account additional privileges. There is an YAML manifest thaty opens up the privileges [here](./securityPolicy-svc-accs.yaml) for reference. This can be used as a reference, but you may want to adjust the rules to suit your environment.
 
