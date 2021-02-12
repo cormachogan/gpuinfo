@@ -1025,7 +1025,7 @@ kubectl describe pod accelerator-operator-controller-manager-85b5f7c788-zx49v -n
 
 ### Step 13.3 - Check the controller / manager logs ###
 
-If we query the __logs__ on the manager container, we should be able to observe successful startup messages as well as successful reconcile requests from the GPUInfo CR that we already deployed back in step 5. These reconcile requests should update the __Status__ fields with node information as per our controller logic. The command to query the manager container logs in the controller Pod is as follows:
+If we query the __logs__ on the manager container, we should be able to observe successful startup messages as well as successful reconcile requests from the GPUInfo CR that we already deployed back in [step 5](https://github.com/cormachogan/gpuinfo#step-5---test-the-crd). These reconcile requests should update the __Status__ fields with node information as per our controller logic. The command to query the manager container logs in the controller Pod is as follows:
 
 ```shell
 kubectl logs accelerator-operator-controller-manager-85b5f7c788-zx49v -n accelerator-operator-system manager
