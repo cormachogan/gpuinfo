@@ -12,18 +12,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Description:		Operator to select some suitable K8s node for a particual role
+//					In this case, simuation code has been added to replace some current non-existing
+//					functionality
+//
+// Author:	   	Cormac J. Hogan (VMware)
+//
+// Date:		11 Feb 2021
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 package main
 
 import (
 	"context"
 	"flag"
+	"net/url"
+	"os"
+
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/session/cache"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/soap"
-	"net/url"
-	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

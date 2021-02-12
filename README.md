@@ -788,7 +788,7 @@ $ bin/manager
 2021-02-12T09:39:13.733Z        INFO    controller-runtime.controller   Starting workers        {"controller": "gpuinfo", "worker count": 1}
 ```
 
-This continues to look good - again, no errors in the output. At this point, you could once again skip ahead to step 13 to do a test of the controller functionality.
+This continues to look good - again, no errors in the output. At this point, you could once again skip ahead to step 13.4 to do a test of the controller functionality.
 
 If everything is working as expected, we can now proceed with creating the Manager as a container which can be run in the cluster.
 
@@ -987,8 +987,6 @@ clusterrolebinding.rbac.authorization.k8s.io/accelerator-operator-manager-rolebi
 clusterrolebinding.rbac.authorization.k8s.io/accelerator-operator-proxy-rolebinding unchanged
 service/accelerator-operator-controller-manager-metrics-service unchanged
 deployment.apps/accelerator-operator-controller-manager created
-
-$
 ```
 
 ## Step 13 - Check controller functionality ##
@@ -1056,7 +1054,7 @@ I0211 14:57:46.087582       1 leaderelection.go:252] successfully acquired lease
 
 ### Step 13.4 - Check a if suitable candidate is returned in the status ###
 
-Last but not least, let's see if we can see the candidate information in the __status__ fields of the GPUInfo object created earlier.
+Last but not least, let's see if we can see the candidate information in the __status__ fields of the GPUInfo object created earlier in Step 5, when we tested the CRD. If you deleted the GPUInfo object, create it again, and query it as follows:
 
 ```yaml
 $ kubectl get gpu gpuinfo-sample -o yaml

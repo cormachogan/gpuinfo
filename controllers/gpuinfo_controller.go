@@ -14,7 +14,7 @@ limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Description:		Controller Logic to slect some suitable K8s node for a particual role
+// Description:		Controller Logic to select some suitable K8s node for a particual role
 //			In this case, simuation code has been added to replace some current non-existing
 //			functionality
 //
@@ -76,6 +76,7 @@ type CandidateList struct {
 // +kubebuilder:rbac:groups=topology.corinternal.com,resources=gpuinfoes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=topology.corinternal.com,resources=gpuinfoes/status,verbs=get;update;patch
 
+//Reconcile function to return suitable candidate for long running job
 func (r *GPUInfoReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("gpuinfo", req.NamespacedName)
