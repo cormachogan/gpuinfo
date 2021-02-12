@@ -741,7 +741,7 @@ export VC_USER='administrator@vsphere.local'
 export VC_PASS='VMware123!'
 ```
 
-The command to launch the controller is ```make run``` and a sample output from such a command is as follows:
+The command to launch the manager is ```make run``` and an example of running such a command is as follows:
 
 ```Makefile
 $ make run
@@ -764,7 +764,7 @@ This looks good so far - no errors in the output. At this point, you could skip 
 
 ## Step 8 - Run the controller in 'development mode' ##
 
-This next step allows us to create the actual controller and lets us manually run it locally. This means that the environment variables needed for vCenter connectivity will also need to be set, as per the previous step. If the controller is still runnning from the previous step, simple control-C it to stop it.
+This next step allows us to create the actual controller and lets us manually run it locally. This means that the environment variables needed for vCenter connectivity will also need to be set, as per the previous step. If the controller is still runnning from the previous step, simple control-C it to stop it. The command to build a standalone manager is ```make manager```.
 
 Here is an example of how we can run the controller in 'development mode':
 
