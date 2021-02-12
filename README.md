@@ -788,7 +788,7 @@ $ bin/manager
 2021-02-12T09:39:13.733Z        INFO    controller-runtime.controller   Starting workers        {"controller": "gpuinfo", "worker count": 1}
 ```
 
-This continues to look good - again, no errors in the output. At this point, you could once again skip ahead to step 13.4 to do a test of the controller functionality.
+This continues to look good - again, no errors in the output. At this point, you could once again skip ahead to step [13.4](https://github.com/cormachogan/gpuinfo#step-134---check-a-if-suitable-candidate-is-returned-in-the-status) to do a test of the controller functionality.
 
 If everything is working as expected, we can now proceed with creating the Manager as a container which can be run in the cluster.
 
