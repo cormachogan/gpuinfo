@@ -727,9 +727,72 @@ if err := r.Status().Update(ctx, gpu); err != nil {
 	}
 ```
 
-With the controller logic now in place, we can now proceed to build the controller / manager.
+With the controller logic now in place, we can now proceed to build the Manager. The Manager is an executable that wraps one or more Controllers. 
 
-## Step 7 - Build the controller ##
+## Step 7 - Test running the controller in the current context ##
+
+The Makefile that is provided with __Kubebuilder__ allows us to do a few cool things when it comes to testing the controller logic. First, we can run a make command that will run the manager in the foreground, and it will run locally against the cluster defined in ~/.kube/config. Note this requires a running Kubernetes cluster to be accessible with the ~/.kube/config. 
+
+Another requirement is that the environment variables needed for vCenter connectivity will need to be set in your local shell where the controller is run, e.g.
+
+```shell
+export VC_HOST='192.168.0.100'
+export VC_USER='administrator@vsphere.local'
+export VC_PASS='VMware123!'
+```
+
+The command to launch the controller is ```make run``` and a sample output from such a command is as follows:
+
+```Makefile
+$ make run
+go: creating new go.mod: module tmp
+go: found sigs.k8s.io/controller-tools/cmd/controller-gen in sigs.k8s.io/controller-tools v0.2.5
+/usr/share/go/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+/usr/share/go/bin/controller-gen "crd:preserveUnknownFields=false,crdVersions=v1,trivialVersions=true" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+go run ./main.go
+2021-02-12T09:25:02.741Z        INFO    controller-runtime.metrics      metrics server is starting to listen    {"addr": ":8080"}
+2021-02-12T09:25:02.868Z        INFO    setup   starting manager
+2021-02-12T09:25:02.869Z        INFO    controller-runtime.manager      starting metrics server {"path": "/metrics"}
+2021-02-12T09:25:02.869Z        INFO    controller-runtime.controller   Starting EventSource    {"controller": "gpuinfo", "source": "kind source: /, Kind="}
+2021-02-12T09:25:02.969Z        INFO    controller-runtime.controller   Starting Controller     {"controller": "gpuinfo"}
+2021-02-12T09:25:02.969Z        INFO    controller-runtime.controller   Starting workers        {"controller": "gpuinfo", "worker count": 1}
+```
+
+This looks good so far - no errors in the output. At this point, you could skip ahead to step 13 to do a test of the controller functionality.
+
+## Step 8 - Run the controller in 'development mode' ##
+
+This next step allows us to create the actual controller and lets us manually run it locally. This means that the environment variables needed for vCenter connectivity will also need to be set, as per the previous step. If the controller is still runnning from the previous step, simple control-C it to stop it.
+
+Here is an example of how we can run the controller in 'development mode':
+
+```Makefile
+$ make manager
+go: creating new go.mod: module tmp
+go: found sigs.k8s.io/controller-tools/cmd/controller-gen in sigs.k8s.io/controller-tools v0.2.5
+/usr/share/go/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go build -o bin/manager main.go
+```
+
+```shell
+$ bin/manager
+2021-02-12T09:39:13.559Z        INFO    controller-runtime.metrics      metrics server is starting to listen    {"addr": ":8080"}
+2021-02-12T09:39:13.630Z        INFO    setup   starting manager
+2021-02-12T09:39:13.631Z        INFO    controller-runtime.manager      starting metrics server {"path": "/metrics"}
+2021-02-12T09:39:13.632Z        INFO    controller-runtime.controller   Starting EventSource    {"controller": "gpuinfo", "source": "kind source: /, Kind="}
+2021-02-12T09:39:13.732Z        INFO    controller-runtime.controller   Starting Controller     {"controller": "gpuinfo"}
+2021-02-12T09:39:13.733Z        INFO    controller-runtime.controller   Starting workers        {"controller": "gpuinfo", "worker count": 1}
+```
+
+This continues to look good - again, no errors in the output. At this point, you could once again skip ahead to step 13 to do a test of the controller functionality.
+
+If everything is working as expected, we can now proceed with creating the Manager as a container which can be run in the cluster.
+
+## Step 9 - Build the Manager executable as a container ##
 
 At this point everything is in place to enable us to deploy the controller to the Kubernete cluster. If you remember back to the prerequisites in step 1, we said that you need access to a container image registry, such as __docker.io__ or __quay.io__, or VMware's own [Harbor](https://github.com/goharbor/harbor/blob/master/README.md) registry. This is where we need this access to a registry, as we need to push the controller's container image somewhere that can be accessed from your Kubernetes cluster. In this example, I am using quay.io as my repository.
 
@@ -835,7 +898,7 @@ $
 
 The container image of the controller is now built and pushed to the container image registry. But we have not yet deployed it. We have to do one or two further modifications before we take that step.
 
-## Step 8 - Modify the Manager manifest to include environment variables ##
+## Step 10 - Modify the Manager manifest to include environment variables ##
 
 Kubebuilder provides a manager manifest scaffold file for deploying the controller. However, since we need to provide vCenter details to our controller, we need to add these to the controller/manager manifest file. This is found in __config/manager/manager.yaml__. This manifest contains the deployment for the controller. In the spec, we need to add an additional __spec.env__ section which has the environment variables defined, as well as the name of our __secret__ (which we will create shortly). Below is a snippet of that code. Here is the code-complete [config/manager/manager.yaml](./config/manager/manager.yaml)).
 
@@ -884,7 +947,7 @@ secret/vc-creds created
 
 We are now ready to deploy the controller to the Kubernetes cluster.
 
-## Step 9 - ClusterRole and ClusterRoleBinding ##
+## Step 11 - ClusterRole and ClusterRoleBinding ##
 
 Because this operator is going to try to access Kubernetes objects such as nodes, you need to ensure that the service account has the approriate privileges. Here is an example of what you might see in the logs when the operator is deployed, if you don't set the privileges correctly:
 
@@ -896,7 +959,7 @@ cannot list resource "nodes" in API group "" at the cluster scope
 
 To address this, you can grant the service account additional privileges. There is an YAML manifest thaty opens up the privileges [here](./securityPolicy-svc-accs.yaml) for reference. This can be used as a reference, but you may want to adjust the rules to suit your environment.
 
-## Step 10 - Deploy the controller ##
+## Step 12 - Deploy the controller ##
 
 To deploy the controller, we run another __make__ command. This will take care of all of the RBAC, cluster roles and role bindings necessary to run the controller, as well as pinging up the correct image, etc.
 
@@ -928,11 +991,11 @@ deployment.apps/accelerator-operator-controller-manager created
 $
 ```
 
-## Step 11 - Check controller functionality ##
+## Step 13 - Check controller functionality ##
 
 Now that our controller has been deployed, let's see if it is working. There are a few different commands that we can run to verify the operator is working.
 
-### Step 11.1 - Check the deployment and replicaset ###
+### Step 13.1 - Check the deployment and replicaset ###
 
 The deployment should be READY. Remember to specify the namespace correctly when checking it.
 
@@ -946,7 +1009,7 @@ NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
 accelerator-operator-controller-manager   1/1     1            1           55m
 ```
 
-### Step 11.2 - Check the Pods ###
+### Step 13.2 - Check the Pods ###
 
 The deployment manages a single controller Pod. There should be 2 containers READY in the controller Pod. One is the __controller / manager__ and the other is the __kube-rbac-proxy__. The [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy/blob/master/README.md) is a small HTTP proxy that can perform RBAC authorization against the Kubernetes API. It restricts requests to authorized Pods only.
 
@@ -962,7 +1025,7 @@ If you experience issues with the one of the pods not coming online, use the fol
 kubectl describe pod accelerator-operator-controller-manager-85b5f7c788-zx49v -n accelerator-operator-system
 ```
 
-### Step 11.3 - Check the controller / manager logs ###
+### Step 13.3 - Check the controller / manager logs ###
 
 If we query the __logs__ on the manager container, we should be able to observe successful startup messages as well as successful reconcile requests from the GPUInfo CR that we already deployed back in step 5. These reconcile requests should update the __Status__ fields with node information as per our controller logic. The command to query the manager container logs in the controller Pod is as follows:
 
@@ -991,7 +1054,7 @@ I0211 14:57:46.087582       1 leaderelection.go:252] successfully acquired lease
 2021-02-11T14:57:46.867Z        DEBUG   controller-runtime.controller   Successfully Reconciled {"controller": "gpuinfo", "request": "default/gpuinfo-sample"}
 ```
 
-### Step 11.4 - Check a if suitable candidate is returned in the status ###
+### Step 13.4 - Check a if suitable candidate is returned in the status ###
 
 Last but not least, let's see if we can see the candidate information in the __status__ fields of the GPUInfo object created earlier.
 
