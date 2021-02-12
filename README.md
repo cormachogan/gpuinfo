@@ -760,7 +760,7 @@ go run ./main.go
 2021-02-12T09:25:02.969Z        INFO    controller-runtime.controller   Starting workers        {"controller": "gpuinfo", "worker count": 1}
 ```
 
-This looks good so far - no errors in the output. At this point, you could skip ahead to step 13 to do a test of the controller functionality.
+This looks good so far - no errors in the output. At this point, you could skip ahead to [13.4](https://github.com/cormachogan/gpuinfo#step-134---check-a-if-suitable-candidate-is-returned-in-the-status) to do a test of the controller functionality.
 
 ## Step 8 - Run the controller in 'development mode' ##
 
